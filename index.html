@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Peminjaman Buku</title>
+    <style>
+        /* CSS untuk Tampilan */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box; /* Penting agar tidak lebar */
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        
+        /* Tabel Data */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        /* Tombol Aksi di Tabel */
+        .btn-kembali {
+            background-color: #ffc107;
+            color: black;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .btn-hapus {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-dipinjam {
+            background-color: #ffcccc;
+            color: #cc0000;
+        }
+        .status-kembali {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📚 Data Peminjaman Buku</h2>
+
+    <!-- Form Input -->
+    <div class="form-group">
+        <label>Nama Peminjam:</label>
+        <input type="text" id="namaPeminjam" placeholder="Contoh: Budi Santoso">
+    </div>
+    
+    <div class="form-group">
+        <label>Judul Buku:</label>
+        <input type="text" id="judulBuku" placeholder="Contoh: Laskar Pelangi">
+    </div>
+    
+    <div class="form-group">
+        <label>Tanggal Pinjam:</label>
+        <input type="date" id="tanggalPinjam">
+    </div>
+
+    <button onclick="tambahData()">+ Tambah Peminjaman</button>
+
+    <!-- Tabel Data -->
+    <table id="tabelBuku">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Nama Peminjam</th>
+                <th>Judul Buku</th>
+                <th>Tanggal</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="isiTabel">
+            <!-- Data akan muncul di sini otomatis -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Logika JavaScript
+    // Mengambil data dari LocalStorage browser agar tidak hilang saat refresh
+    let dataPeminjaman = JSON.parse(localStorage.getItem('peminjamanBuku')) || [];
+
+    function tambahData() {
+        // Ambil nilai dari input
+        const nama = document.getElementById('namaPeminjam').value;
+        const buku = document.getElementById('judulBuku').value;
+        const tanggal = document.getElementById('tanggalPinjam').value;
+
+        // Validasi sederhana
+        if (nama === "" || buku === "" || tanggal === "") {
+            alert("Harap isi semua data!");
+            return;
+        }
+
+        // Buat objek data baru
+        const dataBaru = {
+            id: Date.now(), // ID unik berdasarkan waktu
+            nama: nama,
+            buku: buku,
+            tanggal: tanggal,
+            status: 'Dipinjam' // Default status
+        };
+
+        // Masukkan ke array
+        dataPeminjaman.push(dataBaru);
+        
+        // Simpan ke LocalStorage
+        simpanData();
+        
+        // Bersihkan form
+        document.getElementById('namaPeminjam').value = "";
+        document.getElementById('judulBuku').value = "";
+        document.getElementById('tanggalPinjam').value = "";
+
+        // Tampilkan ulang tabel
+        tampilkanTabel();
+    }
+
+    function tampilkanTabel() {
+        const tabelBody = document.getElementById('isiTabel');
+        tabelBody.innerHTML = ""; // Kosongkan tabel dulu
+
+        dataPeminjaman.forEach((item, index) => {
+            const row = tabelBody.insertRow();
+            
+            // Tentukan warna status
+            const statusClass = item.status === 'Dipinjam' ? 'status-dipinjam' : 'status-kembali';
+
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.nama}</td>
+                <td>${item.buku}</td>
+                <td>${item.tanggal}</td>
+                <td><span class="status-badge ${statusClass}">${item.status}</span></td>
+                <td>
+                    ${item.status === 'Dipinjam' ? 
+                        `<button class="btn-kembali" onclick="kembalikanBuku(${item.id})">Kembalikan</button>` : 
+                        'Sudah Kembali'
+                    }
+                    <button class="btn-hapus" onclick="hapusData(${item.id})">Hapus</button>
+                </td>
+            `;
+        });
+    }
+
+    function kembalikanBuku(id) {
+        // Cari data berdasarkan ID
+        const index = dataPeminjaman.findIndex(item => item.id === id);
+        if (index !== -1) {
+            dataPeminjaman[index].status = 'Dikembalikan';
+            simpanData();
+            tampilkanTabel();
+        }
+    }
+
+    function hapusData(id) {
+        if(confirm("Yakin ingin menghapus data ini?")) {
+            dataPeminjaman = dataPeminjaman.filter(item => item.id !== id);
+            simpanData();
+            tampilkanTabel();
+        }
+    }
+
+    function simpanData() {
+        localStorage.setItem('peminjamanBuku', JSON.stringify(dataPeminjaman));
+    }
+
+    // Tampilkan data saat halaman pertama kali dibuka
+    tampilkanTabel();
+</script>
+
+</body>
+</html>
