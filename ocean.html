@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ocean Catch 🌊</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Exo+2:wght@400;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Exo 2', sans-serif; background: #020d1a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 1rem; overflow-x: hidden; position: relative; }
+  .bubbles-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+  .bubble { position: absolute; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #4fc3f7aa, #01579b44); border: 1px solid #4fc3f755; animation: riseUp linear infinite; }
+  @keyframes riseUp { 0%{transform:translateY(100vh) scale(0.5);opacity:0} 10%{opacity:0.6} 90%{opacity:0.3} 100%{transform:translateY(-120px) scale(1.1);opacity:0} }
+  .title-bar { position: relative; z-index: 2; text-align: center; padding: 0.8rem 0 0.3rem; }
+  .title-bar h1 { font-family: 'Orbitron', monospace; font-size: 26px; font-weight: 900; color: #4fc3f7; text-shadow: 0 0 30px #0288d1; letter-spacing: 3px; }
+  .title-bar p { font-size: 12px; color: #78b8d0; margin-top: 3px; letter-spacing: 1px; }
+
+  .timer-setting { position: relative; z-index: 2; background: #0d2137; border: 1px solid #1565c055; border-radius: 14px; padding: 8px 16px; margin-bottom: 7px; width: 100%; max-width: 480px; display: flex; align-items: center; gap: 12px; }
+  .timer-setting label { font-size: 10px; color: #4fc3f7; letter-spacing: 1px; white-space: nowrap; text-transform: uppercase; }
+  .timer-setting input[type=range] { flex: 1; accent-color: #0288d1; }
+  .timer-val { font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700; color: #e1f5fe; min-width: 48px; text-align: right; }
+  .quick-btns { display: flex; gap: 5px; }
+  .qbtn { font-family: 'Orbitron', monospace; font-size: 10px; padding: 3px 9px; border: 1px solid #1565c0; border-radius: 10px; background: transparent; color: #4fc3f7; cursor: pointer; transition: background 0.15s; }
+  .qbtn:hover, .qbtn.active { background: #1565c0; color: #e1f5fe; }
+
+  .stats-bar { position: relative; z-index: 2; display: flex; gap: 8px; margin: 0.3rem 0; width: 100%; max-width: 480px; }
+  .stat-pill { background: #0d2137; border: 1px solid #1565c055; border-radius: 18px; padding: 5px 10px; display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .stat-pill .label { font-size: 9px; color: #4fc3f7; letter-spacing: 1px; text-transform: uppercase; }
+  .stat-pill .value { font-family: 'Orbitron', monospace; font-size: 15px; font-weight: 700; color: #e1f5fe; }
+  .timer-display { font-family: 'Orbitron', monospace; font-size: 15px; font-weight: 700; color: #e1f5fe; }
+  .timer-display.warn { color: #ff7043; }
+
+  .level-bar-wrap { position: relative; z-index: 2; width: 100%; max-width: 480px; margin-bottom: 6px; background: #0d2137; border-radius: 10px; overflow: hidden; border: 1px solid #1565c033; height: 22px; display: flex; align-items: center; }
+  .level-bar-fill { height: 100%; background: linear-gradient(90deg, #0288d1, #4fc3f7); transition: width 0.4s ease; border-radius: 10px; }
+  .level-bar-text { position: absolute; width: 100%; text-align: center; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; color: #e1f5fe; letter-spacing: 1px; pointer-events: none; }
+
+  .game-area { position: relative; z-index: 2; width: 100%; max-width: 480px; height: 310px; border-radius: 16px; overflow: hidden; border: 2px solid #1565c0; background: linear-gradient(180deg, #01303f 0%, #003057 40%, #01579b 100%); cursor: crosshair; }
+  .ocean-floor { position: absolute; bottom: 0; left: 0; right: 0; height: 38px; background: linear-gradient(0deg, #0d1b2a 0%, #0a2545 100%); border-radius: 0 0 14px 14px; }
+  .light-ray { position: absolute; top: 0; width: 60px; height: 100%; background: linear-gradient(180deg, #4fc3f711 0%, transparent 70%); transform-origin: top center; animation: sway 4s ease-in-out infinite alternate; }
+  @keyframes sway { 0%{transform:skewX(-8deg)} 100%{transform:skewX(8deg)} }
+  .target { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; user-select: none; animation: swim linear infinite; }
+  .target:hover { transform: scale(1.15); }
+  .target.good { background: radial-gradient(circle, #b3e5fccc, #0288d1aa); border: 2px solid #4fc3f7; }
+  .target.bad { background: radial-gradient(circle, #ffcdd2cc, #c62828aa); border: 2px solid #ef9a9a; }
+  @keyframes swim { 0%{transform:translateX(0)} 25%{transform:translateX(8px) translateY(-4px)} 50%{transform:translateX(0) translateY(-2px)} 75%{transform:translateX(-8px) translateY(-4px)} 100%{transform:translateX(0)} }
+  .particle { position: absolute; border-radius: 50%; pointer-events: none; animation: burst 0.5s ease-out forwards; }
+  @keyframes burst { 0%{transform:scale(1) translate(0,0);opacity:1} 100%{transform:scale(0) translate(var(--tx),var(--ty));opacity:0} }
+  .score-pop { position: absolute; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 15px; pointer-events: none; animation: floatUp 0.7s ease-out forwards; z-index: 10; }
+  @keyframes floatUp { 0%{transform:translateY(0) scale(1);opacity:1} 100%{transform:translateY(-50px) scale(0.8);opacity:0} }
+
+  .level-up-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0); background: #0d2137ee; border: 2px solid #4fc3f7; border-radius: 14px; padding: 14px 28px; text-align: center; z-index: 25; transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); pointer-events: none; }
+  .level-up-banner.show { transform: translate(-50%,-50%) scale(1); }
+  .level-up-banner h3 { font-family: 'Orbitron', monospace; font-size: 18px; color: #ffcc02; }
+  .level-up-banner p { font-size: 12px; color: #78b8d0; margin-top: 4px; }
+
+  .combo-flash { position: absolute; top: 28%; left: 50%; transform: translate(-50%,-50%); font-family: 'Orbitron', monospace; font-size: 16px; color: #ffcc02; pointer-events: none; animation: comboAnim 0.7s ease-out forwards; z-index: 30; }
+  @keyframes comboAnim { 0%{transform:translate(-50%,-50%) scale(0.5);opacity:1} 60%{transform:translate(-50%,-70%) scale(1.2);opacity:1} 100%{transform:translate(-50%,-90%) scale(1);opacity:0} }
+  .timer-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: #4fc3f7; transition: width 0.1s linear; z-index: 5; border-radius: 0 0 0 14px; }
+  .seaweed { position: absolute; bottom: 28px; width: 8px; border-radius: 4px; transform-origin: bottom center; animation: sway2 2.5s ease-in-out infinite alternate; }
+  @keyframes sway2 { 0%{transform:skewX(-12deg)} 100%{transform:skewX(12deg)} }
+  .wave { position: absolute; top: 0; left: -100%; width: 300%; height: 18px; border-radius: 50%; background: #4fc3f711; animation: waveMove 3s linear infinite; }
+  @keyframes waveMove { 0%{transform:translateX(0)} 100%{transform:translateX(33.3%)} }
+
+  .overlay { position: absolute; inset: 0; background: #020d1add; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; border-radius: 14px; gap: 10px; }
+  .overlay h2 { font-family: 'Orbitron', monospace; font-size: 20px; color: #4fc3f7; }
+  .overlay p { color: #78b8d0; font-size: 13px; text-align: center; }
+  .overlay .big-score { font-family: 'Orbitron', monospace; font-size: 36px; font-weight: 900; color: #e1f5fe; }
+  .overlay .end-stats { font-size: 12px; color: #78b8d0; text-align: center; line-height: 1.8; }
+
+  .btn-row { position: relative; z-index: 2; display: flex; gap: 12px; margin-top: 0.5rem; }
+  .btn { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; padding: 9px 22px; border: none; border-radius: 24px; cursor: pointer; transition: transform 0.1s; }
+  .btn-primary { background: linear-gradient(135deg, #0288d1, #01579b); color: #e1f5fe; }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-secondary { background: transparent; color: #4fc3f7; border: 1px solid #1565c0; }
+  .btn-secondary:hover { background: #0d2137; transform: translateY(-2px); }
+</style>
+</head>
+<body>
+
+<div class="bubbles-bg" id="bubbles-bg"></div>
+<div class="title-bar">
+  <h1>🌊 OCEAN CATCH</h1>
+  <p>Tangkap ikan biru — hindari yang merah! Level terus naik!</p>
+</div>
+
+<div class="timer-setting">
+  <label>⏱ Durasi</label>
+  <input type="range" id="time-slider" min="30" max="600" step="30" value="300" oninput="onSlider(this.value)">
+  <span class="timer-val" id="slider-label">05:00</span>
+  <div class="quick-btns">
+    <button class="qbtn" onclick="setTime(60)">1m</button>
+    <button class="qbtn active" onclick="setTime(300)">5m</button>
+    <button class="qbtn" onclick="setTime(600)">10m</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-pill"><span class="label">Skor</span><span class="value" id="score-display">0</span></div>
+  <div class="stat-pill"><span class="label">Waktu</span><span class="timer-display" id="timer-display">05:00</span></div>
+  <div class="stat-pill"><span class="label">Level</span><span class="value" id="level-display">1</span></div>
+  <div class="stat-pill"><span class="label">Target</span><span class="value" id="target-display">10</span></div>
+  <div class="stat-pill"><span class="label" style="color:#ffb300">Hi-Lv</span><span class="value" id="hi-display">1</span></div>
+  <div class="stat-pill"><span class="label">Nyawa</span><span class="value" id="lives-display">❤️❤️❤️</span></div>
+</div>
+
+<div class="level-bar-wrap">
+  <div class="level-bar-fill" id="level-bar" style="width:0%"></div>
+  <div class="level-bar-text" id="level-bar-text">Level 1 — 0 / 10 ikan</div>
+</div>
+
+<div class="game-area" id="game-area">
+  <div class="wave"></div>
+  <div class="light-ray" style="left:20%"></div>
+  <div class="light-ray" style="left:55%;animation-delay:1.5s;"></div>
+  <div class="light-ray" style="left:75%;animation-delay:0.8s;width:40px;"></div>
+  <div class="seaweed" style="left:8%;height:48px;background:#1b5e20;"></div>
+  <div class="seaweed" style="left:22%;height:33px;background:#2e7d32;animation-delay:0.4s;"></div>
+  <div class="seaweed" style="left:70%;height:43px;background:#1b5e20;animation-delay:1s;"></div>
+  <div class="seaweed" style="left:88%;height:28px;background:#2e7d32;animation-delay:0.7s;"></div>
+  <div class="ocean-floor"></div>
+  <div class="timer-bar" id="timer-bar" style="width:100%"></div>
+  <div class="level-up-banner" id="lvl-banner">
+    <h3 id="lvl-banner-title">LEVEL UP! 🎉</h3>
+    <p id="lvl-banner-sub">Level 2 — makin cepat!</p>
+  </div>
+  <div class="overlay" id="overlay">
+    <h2>🌊 OCEAN CATCH</h2>
+    <p>Tangkap ikan biru untuk naik level<br>Hindari ikan merah — kurangi nyawa!</p>
+    <p style="font-size:11px;color:#4fc3f7;">Level terus naik setiap kamu kumpulkan target ikan!</p>
+    <p style="font-size:11px;color:#4fc3f7;" id="overlay-dur">⏱ Durasi: 05:00</p>
+    <button class="btn btn-primary" onclick="startGame()">▶ MULAI</button>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="btn btn-secondary" onclick="resetGame()">↺ RESET</button>
+  <button class="btn btn-primary" id="pause-btn" onclick="togglePause()" style="display:none">⏸ PAUSE</button>
+</div>
+
+<script>
+const GOOD = ['🐟','🐠','🐡','🦈','🐬','🐳','🦑'];
+const BAD  = ['🦀','🦞','🦐','🐙','🐍'];
+
+let customTime = 300;
+let score = 0, lives = 3, level = 1, hiLevel = 1;
+let fishCaught = 0, levelTarget = 10;
+let running = false, paused = false;
+let targets = [], spawnTimer = null, timerInterval = null;
+let timeLeft = 300, combo = 0;
+
+const gameArea    = document.getElementById('game-area');
+const scoreEl     = document.getElementById('score-display');
+const levelEl     = document.getElementById('level-display');
+const targetEl    = document.getElementById('target-display');
+const hiEl        = document.getElementById('hi-display');
+const livesEl     = document.getElementById('lives-display');
+const overlay     = document.getElementById('overlay');
+const timerBar    = document.getElementById('timer-bar');
+const timerDisp   = document.getElementById('timer-display');
+const pauseBtn    = document.getElementById('pause-btn');
+const levelBar    = document.getElementById('level-bar');
+const levelBarTxt = document.getElementById('level-bar-text');
+const lvlBanner   = document.getElementById('lvl-banner');
+const lvlBannerT  = document.getElementById('lvl-banner-title');
+const lvlBannerS  = document.getElementById('lvl-banner-sub');
+
+function fmt(s) {
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+function getLevelTarget(lv) { return Math.min(5 + lv * 3, 40); }
+function getSpawnDelay(lv)  { return Math.max(350, 1500 - lv * 65); }
+function getLifetime(lv)    { return Math.max(700, 2500 - lv * 80); }
+function getLives()         { return '❤️'.repeat(Math.max(0, lives)); }
+
+function updateLevelBar() {
+  const pct = Math.min(100, (fishCaught / levelTarget) * 100);
+  levelBar.style.width = pct + '%';
+  levelBarTxt.textContent = 'Level ' + level + ' — ' + fishCaught + ' / ' + levelTarget + ' ikan';
+}
+
+function showLevelUpBanner(lv) {
+  lvlBannerT.textContent = 'LEVEL UP! 🎉';
+  const msgs = ['Semakin cepat!','Tantangan baru!','Luar biasa!','Kamu hebat!','Terus maju!'];
+  lvlBannerS.textContent = 'Level ' + lv + ' — ' + msgs[(lv-2) % msgs.length];
+  lvlBanner.classList.add('show');
+  setTimeout(() => lvlBanner.classList.remove('show'), 1400);
+}
+
+function levelUp() {
+  level++;
+  if (level > hiLevel) { hiLevel = level; hiEl.textContent = hiLevel; }
+  fishCaught = 0;
+  levelTarget = getLevelTarget(level);
+  levelEl.textContent = level;
+  targetEl.textContent = levelTarget;
+  updateLevelBar();
+  showLevelUpBanner(level);
+  clearTimeout(spawnTimer);
+  if (running && !paused) scheduleSpawn();
+}
+
+function scheduleSpawn() {
+  spawnTimer = setTimeout(() => {
+    if (!running || paused) return;
+    spawnTarget();
+    scheduleSpawn();
+  }, getSpawnDelay(level));
+}
+
+function onSlider(v) {
+  customTime = parseInt(v);
+  document.getElementById('slider-label').textContent = fmt(customTime);
+  timerDisp.textContent = fmt(customTime);
+  const od = document.getElementById('overlay-dur');
+  if (od) od.textContent = '⏱ Durasi: ' + fmt(customTime);
+  document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
+  const map = {60:'1m', 300:'5m', 600:'10m'};
+  if (map[customTime]) document.querySelectorAll('.qbtn').forEach(b => {
+    if (b.textContent === map[customTime]) b.classList.add('active');
+  });
+}
+
+function setTime(sec) {
+  customTime = sec;
+  document.getElementById('time-slider').value = sec;
+  onSlider(sec);
+}
+
+function makeBubbles() {
+  const bg = document.getElementById('bubbles-bg');
+  for (let i = 0; i < 18; i++) {
+    const b = document.createElement('div'); b.className = 'bubble';
+    const s = Math.random()*30+8;
+    b.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;bottom:-${s}px;animation-duration:${Math.random()*8+5}s;animation-delay:${Math.random()*6}s;opacity:${Math.random()*0.5+0.1};`;
+    bg.appendChild(b);
+  }
+}
+makeBubbles();
+
+function spawnTarget() {
+  if (!running || paused) return;
+  const badChance = Math.min(0.45, 0.20 + level * 0.02);
+  const isGood = Math.random() > badChance;
+  const size = Math.max(34, 48 - Math.floor(level/3));
+  const el = document.createElement('div');
+  el.className = 'target ' + (isGood ? 'good' : 'bad');
+  el.style.width = size+'px'; el.style.height = size+'px';
+  el.style.left = (Math.random()*(480-size-4)+2)+'px';
+  el.style.top  = (Math.random()*(270-size-38)+2)+'px';
+  el.textContent = isGood
+    ? GOOD[Math.floor(Math.random()*GOOD.length)]
+    : BAD[Math.floor(Math.random()*BAD.length)];
+  el.style.animationDuration = Math.max(0.7, 1.8 - level*0.05)+'s';
+
+  el.onclick = (e) => {
+    if (!running || paused) return;
+    e.stopPropagation();
+    const r = el.getBoundingClientRect(), ar = gameArea.getBoundingClientRect();
+    const cx = r.left-ar.left+r.width/2, cy = r.top-ar.top+r.height/2;
+    removeTarget(el);
+    if (isGood) {
+      combo++;
+      const pts = 10 + (combo >= 3 ? 5 : 0) + Math.floor(level/2);
+      score += pts;
+      fishCaught++;
+      if (combo >= 3) showCombo(combo);
+      showPop(cx, cy, '+'+pts, '#4fc3f7');
+      spawnParticles(cx, cy, '#4fc3f7');
+      scoreEl.textContent = score;
+      updateLevelBar();
+      if (fishCaught >= levelTarget) levelUp();
+    } else {
+      combo = 0; lives = Math.max(0, lives-1);
+      livesEl.textContent = getLives();
+      showPop(cx, cy, '-1 ❤️', '#ef5350');
+      spawnParticles(cx, cy, '#ef5350');
+      if (lives <= 0) endGame();
+    }
+  };
+
+  gameArea.appendChild(el);
+  targets.push({ el, timer: setTimeout(() => {
+    if (el.parentNode) { removeTarget(el); if (isGood) combo = 0; }
+  }, getLifetime(level)) });
+}
+
+function removeTarget(el) { el.remove(); targets = targets.filter(t => t.el !== el); }
+
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 7; i++) {
+    const p = document.createElement('div'); p.className = 'particle';
+    const angle = (Math.PI*2*i)/7, dist = 28+Math.random()*18;
+    p.style.cssText = `width:6px;height:6px;background:${color};left:${x}px;top:${y}px;--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;`;
+    gameArea.appendChild(p); setTimeout(() => p.remove(), 520);
+  }
+}
+
+function showPop(x, y, text, color) {
+  const p = document.createElement('div'); p.className = 'score-pop';
+  p.style.cssText = `left:${x-16}px;top:${y-16}px;color:${color};`;
+  p.textContent = text; gameArea.appendChild(p); setTimeout(() => p.remove(), 750);
+}
+
+function showCombo(n) {
+  const c = document.createElement('div'); c.className = 'combo-flash';
+  c.textContent = `COMBO x${n}! 🔥`; gameArea.appendChild(c); setTimeout(() => c.remove(), 750);
+}
+
+function startGame() {
+  score=0; lives=3; level=1; hiLevel=1; combo=0;
+  fishCaught=0; levelTarget=getLevelTarget(1); timeLeft=customTime;
+  scoreEl.textContent='0'; levelEl.textContent='1';
+  targetEl.textContent=levelTarget; hiEl.textContent='1';
+  livesEl.textContent=getLives();
+  timerDisp.textContent=fmt(customTime);
+  timerDisp.classList.remove('warn');
+  updateLevelBar();
+  overlay.style.display='none';
+  pauseBtn.style.display='inline-block';
+  running=true; paused=false;
+  targets.forEach(t => { clearTimeout(t.timer); t.el.remove(); }); targets=[];
+  scheduleSpawn();
+
+  timerInterval = setInterval(() => {
+    if (paused) return;
+    timeLeft -= 0.1;
+    const pct = (timeLeft / customTime) * 100;
+    timerBar.style.width = pct + '%';
+    timerDisp.textContent = fmt(timeLeft);
+    const warnSec = Math.min(60, customTime * 0.2);
+    timerBar.style.background = timeLeft <= warnSec ? '#ff7043' : '#4fc3f7';
+    if (timeLeft <= warnSec) timerDisp.classList.add('warn');
+    else timerDisp.classList.remove('warn');
+    if (timeLeft <= 0) endGame();
+  }, 100);
+}
+
+function endGame() {
+  running=false; paused=false;
+  clearTimeout(spawnTimer); clearInterval(timerInterval);
+  targets.forEach(t => { clearTimeout(t.timer); t.el.remove(); }); targets=[];
+  lvlBanner.classList.remove('show');
+  pauseBtn.style.display='none';
+  timerBar.style.width='100%'; timerBar.style.background='#4fc3f7';
+  timerDisp.classList.remove('warn');
+  overlay.innerHTML = `
+    <h2>⚓ GAME OVER</h2>
+    <div class="big-score">${score}</div>
+    <div class="end-stats">
+      Level tertinggi: <b style="color:#4fc3f7">${level}</b><br>
+      Ikan tertangkap sesi ini: <b style="color:#4fc3f7">${fishCaught}/${levelTarget}</b><br>
+      Hi-Level: <b style="color:#ffb300">${hiLevel}</b>
+    </div>
+    <button class="btn btn-primary" onclick="startGame()">▶ MAIN LAGI</button>
+  `;
+  overlay.style.display='flex';
+}
+
+function resetGame() {
+  running=false; paused=false;
+  clearTimeout(spawnTimer); clearInterval(timerInterval);
+  targets.forEach(t => { clearTimeout(t.timer); t.el.remove(); }); targets=[];
+  lvlBanner.classList.remove('show');
+  score=0; lives=3; level=1; hiLevel=1; combo=0;
+  fishCaught=0; levelTarget=getLevelTarget(1); timeLeft=customTime;
+  scoreEl.textContent='0'; levelEl.textContent='1';
+  targetEl.textContent=levelTarget; hiEl.textContent='1';
+  livesEl.textContent=getLives();
+  timerDisp.textContent=fmt(customTime);
+  timerDisp.classList.remove('warn');
+  timerBar.style.width='100%'; timerBar.style.background='#4fc3f7';
+  updateLevelBar();
+  pauseBtn.style.display='none';
+  overlay.innerHTML = `
+    <h2>🌊 OCEAN CATCH</h2>
+    <p>Tangkap ikan biru untuk naik level<br>Hindari ikan merah — kurangi nyawa!</p>
+    <p style="font-size:11px;color:#4fc3f7;">Level terus naik setiap kamu kumpulkan target ikan!</p>
+    <p style="font-size:11px;color:#4fc3f7;" id="overlay-dur">⏱ Durasi: ${fmt(customTime)}</p>
+    <button class="btn btn-primary" onclick="startGame()">▶ MULAI</button>
+  `;
+  overlay.style.display='flex';
+}
+
+function togglePause() {
+  if (!running) return;
+  paused = !paused;
+  pauseBtn.textContent = paused ? '▶ LANJUT' : '⏸ PAUSE';
+  if (!paused) scheduleSpawn();
+}
+</script>
+</body>
+</html>
