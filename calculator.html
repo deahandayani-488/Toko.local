@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Islamic Calculator v3 (Loss Logic)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+            --highlight: #ecfdf5;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        body.lang-ar { font-family: 'Tajawal', sans-serif; direction: rtl; }
+
+        .app-container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 480px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { margin: 0; font-size: 1.5rem; }
+        p { margin: 5px 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+        .lang-select {
+            margin-top: 15px;
+            padding: 5px;
+            border-radius: 5px;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .lang-select option { color: black; }
+
+        .tabs {
+            display: flex;
+            background: #eef2ff;
+            padding: 5px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 5px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background: white;
+            font-weight: bold;
+        }
+
+        .content { padding: 20px; }
+        .input-group { margin-bottom: 15px; }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #4b5563;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+
+        .sub-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .ratio-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .ratio-input { flex: 1; }
+
+        .calc-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .calc-btn:hover { background-color: var(--primary-dark); }
+
+        .result-box {
+            margin-top: 20px;
+            background-color: var(--highlight);
+            border: 1px solid #d1fae5;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+        .result-box.show { display: block; animation: fadeIn 0.3s; }
+
+        .step-info {
+            font-size: 0.8rem;
+            color: #6b7280;
+            background: rgba(0,0,0,0.05);
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .loss-note {
+            font-size: 0.8rem;
+            color: #991b1b;
+            background: #fee2e2;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-align: center;
+            border: 1px solid #fca5a5;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            text-align: center;
+            font-weight: bold;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+        .status-profit { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .status-loss { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            border-bottom: 1px dashed #a7f3d0;
+            padding-bottom: 5px;
+        }
+        
+        .result-item.final {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-top: 10px;
+            font-weight: bold; 
+            color: var(--primary-dark); 
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.5);
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        .val { color: var(--primary-dark); font-weight: 600; }
+        .hidden { display: none; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body class="lang-id">
+
+    <div class="app-container">
+        <header>
+            <h1 id="appTitle">Smart Syariah Calc</h1>
+            <p id="appSubtitle">Auto Pro-Rata & Loss Logic</p>
+            <select id="langSelect" class="lang-select" onchange="changeLanguage()">
+                <option value="id">Bahasa Indonesia</option>
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+            </select>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="switchMode('mudharabah')" id="tabMudharabah">Mudharabah</button>
+            <button class="tab-btn" onclick="switchMode('musyarakah')" id="tabMusyarakah">Musyarakah</button>
+            <button class="tab-btn" onclick="switchMode('murabahah')" id="tabMurabahah">Murabahah</button>
+        </nav>
+
+        <div class="content">
+            
+            <!-- FORM MUDHARABAH -->
+            <div id="formMudharabah">
+                <div class="input-group">
+                    <label id="lblCapitalMud">Modal Anda (Individu)</label>
+                    <input type="number" id="mudCapital" placeholder="Contoh: 10000000">
+                </div>
+                
+                <div class="input-group">
+                    <label id="lblTotalCap">Total Saldo Bank (Pool Dana)</label>
+                    <span id="subTotalCap" class="sub-label">Total dana seluruh nasabah yang dihitung</span>
+                    <input type="number" id="mudTotalBankCap" placeholder="Contoh: 950000000">
+                </div>
+
+                <div class="input-group">
+                    <label id="lblTotalProfit">Total Hasil Bank (Laba/Rugi)</label>
+                    <span class="sub-label" style="color:#ef4444;">Gunakan tanda minus (-) untuk kerugian</span>
+                    <input type="number" id="mudTotalBankProfit" placeholder="Contoh: -30000000">
+                </div>
+
+                <div class="input-group">
+                    <label id="lblRatioMud">Nisbah Bagi Hasil (Bank : Nasabah)</label>
+                    <div class="ratio-group">
+                        <input type="number" id="mudRatioBank" class="ratio-input" placeholder="Bank %">
+                        <span>:</span>
+                        <input type="number" id="mudRatioCust" class="ratio-input" placeholder="Nasabah %">
+                    </div>
+                </div>
+                
+                <button class="calc-btn" onclick="calcMudharabah()" id="btnCalcMud">Hitung Otomatis</button>
+            </div>
+
+            <!-- FORM MUSYARAKAH -->
+            <div id="formMusyarakah" class="hidden">
+                <div class="input-group">
+                    <label id="lblCapA">Modal Mitra A</label>
+                    <input type="number" id="musCapA" placeholder="0">
+                </div>
+                <div class="input-group">
+                    <label id="lblCapB">Modal Mitra B</label>
+                    <input type="number" id="musCapB" placeholder="0">
+                </div>
+                <div class="input-group">
+                    <label id="lblProfitMus">Keuntungan / Kerugian Bersih</label>
+                    <input type="number" id="musProfit" placeholder="0">
+                </div>
+                <button class="calc-btn" onclick="calcMusyarakah()" id="btnCalcMus">Hitung Kemitraan</button>
+            </div>
+
+            <!-- FORM MURABAHAH -->
+            <div id="formMurabahah" class="hidden">
+                <div class="input-group">
+                    <label id="lblCost">Harga Pokok (Cost Price)</label>
+                    <input type="number" id="murCost" placeholder="0">
+                </div>
+                <div class="input-group">
+                    <label id="lblMargin">Margin / Keuntungan (Rp)</label>
+                    <input type="number" id="murMargin" placeholder="0">
+                </div>
+                <div class="input-group">
+                    <label id="lblTenor">Tenor (Bulan) - Opsional</label>
+                    <input type="number" id="murTenor" placeholder="0">
+                </div>
+                <button class="calc-btn" onclick="calcMurabahah()" id="btnCalcMur">Hitung Harga Jual</button>
+            </div>
+
+            <!-- HASIL RESULT -->
+            <div id="resultBox" class="result-box">
+                <div id="statusBadge" class="status-badge"></div>
+                <div id="lossNote" class="loss-note hidden"></div>
+                <div id="stepInfo" class="step-info"></div>
+                <h3 style="margin-top:0; color:var(--primary-dark); font-size:1rem" id="resTitle">Rincian Perhitungan</h3>
+                <div id="resultContent"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- DATA BAHASA ---
+        const translations = {
+            id: {
+                title: "Smart Syariah Calc",
+                subtitle: "Auto Pro-Rata & Loss Logic",
+                tabMud: "Mudharabah",
+                tabMus: "Musyarakah",
+                tabMur: "Murabahah",
+                
+                lblCapMud: "Modal Anda (Individu)",
+                lblTotCap: "Total Saldo Bank (Pool Dana)",
+                subTotCap: "Total dana seluruh nasabah yang dihitung",
+                lblTotProf: "Total Hasil Bank (Laba/Rugi)",
+                lblRatioMud: "Nisbah Bagi Hasil (Bank : Nasabah)",
+                btnCalcMud: "Hitung Otomatis",
+                
+                lblCapA: "Modal Mitra A",
+                lblCapB: "Modal Mitra B",
+                lblProfMus: "Keuntungan / Kerugian Bersih",
+                btnCalcMus: "Hitung Kemitraan",
+
+                lblCost: "Harga Pokok (Cost Price)",
+                lblMargin: "Margin / Keuntungan (Rp)",
+                lblTenor: "Tenor (Bulan) - Opsional",
+                btnCalcMur: "Hitung Harga Jual",
+
+                resTitle: "Rincian Perhitungan",
+                stepInfo: "Info Langkah Perhitungan",
+                lossInfo: "Catatan Syariah: Kerugian finansial ditanggung sepenuhnya oleh Pemilik Modal (Nasabah). Bank (Pengelola) tidak ikut menanggung kerugian finansial.",
+                yourShare: "Bagian Kotor Anda (Pro-rata)",
+                bankShare: "Bagian Bank (Pemilik Modal)",
+                bankShareNoLoss: "Bagian Bank (Tidak Menanggung)",
+                custShare: "Bagian Bersih Anda (Pengelola)",
+                custShareLoss: "Beban Kerugian Anda",
+                effectiveRate: "Imbal Hasil Efektif",
+                shareA: "Bagian Mitra A",
+                shareB: "Bagian Mitra B",
+                sellPrice: "Harga Jual (Murabahah)",
+                installment: "Angsuran per Bulan",
+                statusProfit: "STATUS: LABA (KEUNTUNGAN)",
+                statusLoss: "STATUS: RUGI",
+                statusEven: "STATUS: IMPAS"
+            },
+            en: {
+                title: "Smart Islamic Calc",
+                subtitle: "Auto Pro-Rata & Loss Logic",
+                tabMud: "Mudharabah",
+                tabMus: "Musyarakah",
+                tabMur: "Murabahah",
+                
+                lblCapMud: "Your Capital (Individual)",
+                lblTotCap: "Total Bank Pool",
+                subTotCap: "Total funds of all customers",
+                lblTotProf: "Total Bank Result (Profit/Loss)",
+                lblRatioMud: "Profit Ratio (Bank : Customer)",
+                btnCalcMud: "Auto Calculate",
+                
+                lblCapA: "Partner A Capital",
+                lblCapB: "Partner B Capital",
+                lblProfMus: "Net Profit / Loss",
+                btnCalcMus: "Calculate Partnership",
+
+                lblCost: "Cost Price",
+                lblMargin: "Margin / Profit (Rp)",
+                lblTenor: "Tenor (Months) - Optional",
+                btnCalcMur: "Calculate Selling Price",
+
+                resTitle: "Calculation Details",
+                stepInfo: "Calculation Step Info",
+                lossInfo: "Sharia Note: Financial loss is borne entirely by the Capital Owner. The Manager (Bank) does not share the financial loss.",
+                yourShare: "Your Gross Share (Pro-rata)",
+                bankShare: "Bank Share (Capital Owner)",
+                bankShareNoLoss: "Bank Share (No Financial Loss)",
+                custShare: "Your Net Share (Entrepreneur)",
+                custShareLoss: "Your Loss Burden",
+                effectiveRate: "Effective Profit Rate",
+                shareA: "Partner A Share",
+                shareB: "Partner B Share",
+                sellPrice: "Selling Price",
+                installment: "Monthly Installment",
+                statusProfit: "STATUS: PROFIT",
+                statusLoss: "STATUS: LOSS",
+                statusEven: "STATUS: BREAK EVEN"
+            },
+            ar: {
+                title: "حاسبة الذكية الإسلامية",
+                subtitle: "حساب الأرباح والخسائر",
+                tabMud: "المضاربة",
+                tabMus: "المشاركة",
+                tabMur: "المرابحة",
+                
+                lblCapMud: "رأس مالك (فردي)",
+                lblTotCap: "إجمالي رصيد البنك",
+                subTotCap: "إجمالي أموال العملاء",
+                lblTotProf: "نتيجة البنك (ربح / خسارة)",
+                lblRatioMud: "نسبة المشاركة (البنك : العميل)",
+                btnCalcMud: "حساب تلقائي",
+                
+                lblCapA: "رأس مال الشريك أ",
+                lblCapB: "رأس مال الشريك ب",
+                lblProfMus: "صافي الربح / الخسارة",
+                btnCalcMus: "حساب الشراكة",
+
+                lblCost: "سعر التكلفة",
+                lblMargin: "هامش الربح",
+                lblTenor: "مدة السداد (شهر)",
+                btnCalcMur: "حساب سعر البيع",
+
+                resTitle: "تفاصيل الحساب",
+                stepInfo: "معلومات خطوة الحساب",
+                lossInfo: "ملاحظة شرعية: تتحمل الخسارة المالية بالكامل من قبل صاحب رأس المال. المدير (البنك) لا يتحمل الخسارة المالية.",
+                yourShare: "حصتك الإجمالية (تناسبية)",
+                bankShare: "حصة البنك (صاحب المال)",
+                bankShareNoLoss: "حصة البنك (لا خسارة)",
+                custShare: "حصتك الصافية (المضارب)",
+                custShareLoss: "عبء خسارتك",
+                effectiveRate: "معدل الربح الفعلي",
+                shareA: "حصة الشريك أ",
+                shareB: "حصة الشريك ب",
+                sellPrice: "سعر البيع",
+                installment: "القسط الشهري",
+                statusProfit: "الحالة: ربح",
+                statusLoss: "الحالة: خسارة",
+                statusEven: "الحالة: تعادل"
+            }
+        };
+
+        let currentLang = 'id';
+
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            const t = translations[currentLang];
+            const body = document.body;
+
+            body.className = '';
+            if (currentLang === 'ar') body.classList.add('lang-ar');
+            else body.classList.add('lang-id');
+
+            document.getElementById('appTitle').innerText = t.title;
+            document.getElementById('appSubtitle').innerText = t.subtitle;
+            
+            document.getElementById('tabMudharabah').innerText = t.tabMud;
+            document.getElementById('tabMusyarakah').innerText = t.tabMus;
+            document.getElementById('tabMurabahah').innerText = t.tabMur;
+
+            document.getElementById('lblCapitalMud').innerText = t.lblCapMud;
+            document.getElementById('lblTotalCap').innerText = t.lblTotCap;
+            document.getElementById('subTotalCap').innerText = t.subTotCap;
+            document.getElementById('lblTotalProfit').innerText = t.lblTotProf;
+            document.getElementById('lblRatioMud').innerText = t.lblRatioMud;
+            document.getElementById('btnCalcMud').innerText = t.btnCalcMud;
+
+            document.getElementById('lblCapA').innerText = t.lblCapA;
+            document.getElementById('lblCapB').innerText = t.lblCapB;
+            document.getElementById('lblProfitMus').innerText = t.lblProfMus;
+            document.getElementById('btnCalcMus').innerText = t.btnCalcMus;
+
+            document.getElementById('lblCost').innerText = t.lblCost;
+            document.getElementById('lblMargin').innerText = t.lblMargin;
+            document.getElementById('lblTenor').innerText = t.lblTenor;
+            document.getElementById('btnCalcMur').innerText = t.btnCalcMur;
+
+            document.getElementById('resTitle').innerText = t.resTitle;
+            document.getElementById('stepInfo').innerText = t.stepInfo;
+        }
+
+        function switchMode(mode) {
+            ['Mudharabah', 'Musyarakah', 'Murabahah'].forEach(m => {
+                document.getElementById('form' + m).classList.add('hidden');
+                document.getElementById('tab' + m).classList.remove('active');
+            });
+            let capMode = mode.charAt(0).toUpperCase() + mode.slice(1);
+            document.getElementById('form' + capMode).classList.remove('hidden');
+            document.getElementById('tab' + capMode).classList.add('active');
+            document.getElementById('resultBox').classList.remove('show');
+        }
+
+        function formatMoney(amount) {
+            return amount.toLocaleString(currentLang === 'id' ? 'id-ID' : 'en-US');
+        }
+
+        function showResult(statusHtml, lossHtml, stepText, html) {
+            const box = document.getElementById('resultBox');
+            const badge = document.getElementById('statusBadge');
+            const lossNote = document.getElementById('lossNote');
+            
+            badge.className = 'status-badge'; 
+            badge.innerHTML = statusHtml;
+            
+            lossNote.innerHTML = lossHtml;
+            if(lossHtml) lossNote.classList.remove('hidden');
+            else lossNote.classList.add('hidden');
+            
+            document.getElementById('stepInfo').innerText = stepText;
+            document.getElementById('resultContent').innerHTML = html;
+            box.classList.add('show');
+        }
+
+        // --- LOGIKA MUDHARABAH OTOMATIS (UPDATED LOSS LOGIC) ---
+        function calcMudharabah() {
+            const indCapital = parseFloat(document.getElementById('mudCapital').value) || 0;
+            const totBankCap = parseFloat(document.getElementById('mudTotalBankCap').value) || 0;
+            const totBankProfit = parseFloat(document.getElementById('mudTotalBankProfit').value) || 0;
+            const ratioBank = parseFloat(document.getElementById('mudRatioBank').value) || 0;
+            const ratioCust = parseFloat(document.getElementById('mudRatioCust').value) || 0;
+            const t = translations[currentLang];
+
+            if (totBankCap === 0) {
+                alert("Total Saldo Bank tidak boleh 0");
+                return;
+            }
+            if (ratioBank + ratioCust === 0) {
+                alert("Nisbah tidak boleh kosong");
+                return;
+            }
+
+            // 1. Hitung Porsi Pro-rata
+            const proRataRatio = indCapital / totBankCap;
+            // grossShare bisa positif (untung) atau negatif (rugi)
+            const grossShare = totBankProfit * proRataRatio; 
+
+            // Variabel untuk label dan nilai akhir
+            let statusText = "";
+            let lossHtml = "";
+            let netBankShare = 0;
+            let netCustShare = 0;
+            let bankLabel = "";
+            let custLabel = "";
+            const totalRatio = ratioBank + ratioCust;
+
+            // 2. Cek KONDISI LABA atau RUGI
+            if (totBankProfit > 0) {
+                // --- KONDISI: LABA ---
+                statusText = t.statusProfit;
+                lossHtml = "";
+                
+                // Bagi Hasil Sesuai Nisbah
+                netBankShare = grossShare * (ratioBank / totalRatio);
+                netCustShare = grossShare * (ratioCust / totalRatio);
+
+                bankLabel = t.bankShare;
+                custLabel = t.custShare;
+
+            } else if (totBankProfit < 0) {
+                // --- KONDISI: RUGI ---
+                statusText = t.statusLoss;
+                lossHtml = t.lossInfo;
+                
+                // Prinsip Syariah: Kerugian Finansial ditanggung Shahibul Maal (Pemilik Modal / Nasabah)
+                // Bank (Mudharib) tidak ikut menanggung kerugian finansial
+                netBankShare = 0; 
+                netCustShare = grossShare; // Nasabah menanggung seluruh porsi kerugian
+                
+                bankLabel = t.bankShareNoLoss;
+                custLabel = t.custShareLoss;
+
+            } else {
+                // --- KONDISI: IMPAS ---
+                statusText = t.statusEven;
+                lossHtml = "";
+                netBankShare = 0;
+                netCustShare = 0;
+                bankLabel = t.bankShare;
+                custLabel = t.custShare;
+            }
+
+            // 3. Hitung Imbal Hasil Efektif (Return Rate)
+            let effectiveRate = 0;
+            if (indCapital > 0) {
+                effectiveRate = (netCustShare / indCapital) * 100;
+            }
+
+            // Tampilkan Hasil
+            const stepText = `Porsi Modal: ${(proRataRatio * 100).toFixed(4)}% dari Total Dana Bank.`;
+            
+            let html = `
+                <div class="result-item"><span>${t.yourShare}:</span> <span class="val">${formatMoney(grossShare)}</span></div>
+                <div class="result-item"><span>${bankLabel}:</span> <span class="val">${formatMoney(Math.abs(netBankShare))}</span></div>
+                <div class="result-item final">
+                    <span>${custLabel}:</span> 
+                    <span class="val">${formatMoney(netCustShare)}</span>
+                </div>
+                <div style="margin-top:10px; font-size:0.85rem; color:#555; text-align:right;">
+                    ${t.effectiveRate}: <strong>${effectiveRate.toFixed(2)}%</strong>
+                </div>
+            `;
+            showResult(statusText, lossHtml, stepText, html);
+        }
+
+        // --- LOGIKA MUSYARAKAH ---
+        function calcMusyarakah() {
+            const capA = parseFloat(document.getElementById('musCapA').value) || 0;
+            const capB = parseFloat(document.getElementById('musCapB').value) || 0;
+            const profit = parseFloat(document.getElementById('musProfit').value) || 0;
+            const t = translations[currentLang];
+
+            const totalCap = capA + capB;
+            if (totalCap === 0) return alert("Modal tidak boleh 0");
+
+            const shareA = profit * (capA / totalCap);
+            const shareB = profit * (capB / totalCap);
+
+            let statusText = "";
+            if(profit > 0) statusText = t.statusProfit;
+            else if(profit < 0) statusText = t.statusLoss;
+            else statusText = t.statusEven;
+
+            let html = `
+                <div class="result-item"><span>Total Modal:</span> <span class="val">${formatMoney(totalCap)}</span></div>
+                <div class="result-item"><span>${t.shareA}:</span> <span class="val">${formatMoney(shareA)}</span></div>
+                <div class="result-item"><span>${t.shareB}:</span> <span class="val">${formatMoney(shareB)}</span></div>
+            `;
+            showResult(statusText, "", "", html);
+        }
+
+        // --- LOGIKA MURABAHAH ---
+        function calcMurabahah() {
+            const cost = parseFloat(document.getElementById('murCost').value) || 0;
+            const margin = parseFloat(document.getElementById('murMargin').value) || 0;
+            const tenor = parseFloat(document.getElementById('murTenor').value) || 0;
+            const t = translations[currentLang];
+
+            const sellingPrice = cost + margin;
+            let installment = 0;
+            if (tenor > 0) installment = sellingPrice / tenor;
+
+            let html = `
+                <div class="result-item"><span>Harga Pokok:</span> <span class="val">${formatMoney(cost)}</span></div>
+                <div class="result-item"><span>Margin:</span> <span class="val">${formatMoney(margin)}</span></div>
+                <div class="result-item final"><span>${t.sellPrice}:</span> <span class="val">${formatMoney(sellingPrice)}</span></div>
+            `;
+            if (tenor > 0) {
+                html += `<div class="result-item"><span>${t.installment}:</span> <span class="val">${formatMoney(installment)}</span></div>`;
+            }
+            showResult(t.statusProfit, "", "", html);
+        }
+
+        changeLanguage();
+    </script>
+</body>
+</html>
